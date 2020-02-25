@@ -153,16 +153,80 @@ bool Mob::targetInRange() {
 //  1) return a vector of mobs that we're colliding with
 //  2) handle collision with towers & river 
 std::shared_ptr<Mob> Mob::checkCollision() {
+
+	//get *this* point
+	std::shared_ptr<Point> posA = this->getPosition();
+	int posAX = posA->x;
+	int posAY = posA->y;
+	float sizeA = this->GetSize();
+
 	for (std::shared_ptr<Mob> otherMob : GameState::mobs) {
 		// don't collide with yourself
 		if (this->sameMob(otherMob)) { continue; }
 
+		//Getting the other point
+		std::shared_ptr<Point> posB = otherMob->getPosition();
+		int posBX = posB->x;
+		int posBY = posB->y;
+		float sizeB = otherMob->GetSize();
+
+		float sizeAvg = (sizeA + sizeB) / 2.0f;
+		float xDif = float(abs(posAX - posBX));
+		float yDif = float(abs(posAY - posBY));
+
+		if ((xDif < sizeAvg) || (yDif < sizeAvg)) {
+			// collision has happened. add mob to vector
+		}
 		// PROJECT 3: YOUR CODE CHECKING FOR A COLLISION GOES HERE
 	}
 	return std::shared_ptr<Mob>(nullptr);
 }
 
 void Mob::processCollision(std::shared_ptr<Mob> otherMob, double elapsedTime) {
+
+	//get *this* point
+	std::shared_ptr<Point> posA = this->getPosition();
+	int posAX = posA->x;
+	int posAY = posA->y;
+	float sizeA = this->GetSize();
+
+	//Getting the other point
+	std::shared_ptr<Point> posB = otherMob->getPosition();
+	int posBX = posB->x;
+	int posBY = posB->y;
+	float sizeB = otherMob->GetSize();
+
+	//Getting the masses
+	float thisMass = this->GetMass();
+	float otherMass = otherMob->GetMass();
+
+	//Getting the target positions
+	float aXdir = this->targetPosition->x;
+	float aYdir = this->targetPosition->y;
+	
+	float bXdir = otherMob->targetPosition->y;
+	float bYdir = otherMob->targetPosition->y;
+
+	//Getting the movement directions
+
+
+	//----------
+
+	// if the masses are the same
+	if (thisMass == otherMass) {
+		// moving in about the same direction
+		if (this->targetPosition->x)
+	}
+
+	if (thisMass < otherMass) {
+		// move this one backward, and the other forward
+		this->targetPosition;
+	}
+
+	if (thisMass > otherMass) {
+		// move this one forward, and the other backward
+	}
+
 	// PROJECT 3: YOUR COLLISION HANDLING CODE GOES HERE
 }
 
