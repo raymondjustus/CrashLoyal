@@ -152,12 +152,14 @@ bool Mob::targetInRange() {
 // PROJECT 3: 
 //  1) return a vector of mobs that we're colliding with
 //  2) handle collision with towers & river 
-std::shared_ptr<Mob> Mob::checkCollision() {
+std::vector<std::shared_ptr<Mob>> Mob::checkCollision() {
+
+	std::vector<std::shared_ptr<Mob>> colidingWith;
 
 	//get *this* point
 	std::shared_ptr<Point> posA = this->getPosition();
-	int posAX = posA->x;
-	int posAY = posA->y;
+	float posAX = posA->x;
+	float posAY = posA->y;
 	float sizeA = this->GetSize();
 
 	for (std::shared_ptr<Mob> otherMob : GameState::mobs) {
@@ -166,61 +168,130 @@ std::shared_ptr<Mob> Mob::checkCollision() {
 
 		//Getting the other point
 		std::shared_ptr<Point> posB = otherMob->getPosition();
-		int posBX = posB->x;
-		int posBY = posB->y;
+		float posBX = posB->x;
+		float posBY = posB->y;
 		float sizeB = otherMob->GetSize();
 
 		float sizeAvg = (sizeA + sizeB) / 2.0f;
 		float xDif = float(abs(posAX - posBX));
 		float yDif = float(abs(posAY - posBY));
 
-		if ((xDif < sizeAvg) || (yDif < sizeAvg)) {
-			// collision has happened. add mob to vector
+		if ((xDif <= sizeAvg) && (yDif <= sizeAvg)) {
+			colidingWith.push_back(otherMob);
 		}
-		// PROJECT 3: YOUR CODE CHECKING FOR A COLLISION GOES HERE
 	}
-	return std::shared_ptr<Mob>(nullptr);
+	return colidingWith;
+}
+
+Point normalizeVector(Point movementVector, Mob* mob, double elapsedTime) {
+	movementVector.normalize();
+	movementVector *= (float)mob->GetSpeed();
+	movementVector *= (float)elapsedTime;
+	return movementVector;
 }
 
 void Mob::processCollision(std::shared_ptr<Mob> otherMob, double elapsedTime) {
 
 	//get *this* point
 	std::shared_ptr<Point> posA = this->getPosition();
-	int posAX = posA->x;
-	int posAY = posA->y;
+	float posAX = posA->x;
+	float posAY = posA->y;
 	float sizeA = this->GetSize();
 
 	//Getting the other point
 	std::shared_ptr<Point> posB = otherMob->getPosition();
-	int posBX = posB->x;
-	int posBY = posB->y;
+	float posBX = posB->x;
+	float posBY = posB->y;
 	float sizeB = otherMob->GetSize();
 
 	//Getting the masses
 	float thisMass = this->GetMass();
 	float otherMass = otherMob->GetMass();
 
-	//Getting the target positions
-	float aXdir = this->targetPosition->x;
-	float aYdir = this->targetPosition->y;
-	
-	float bXdir = otherMob->targetPosition->y;
-	float bYdir = otherMob->targetPosition->y;
-
 	//Getting the movement directions
-
+	bool thisGoingUp = this->targetPosition->y < this->pos.y;
+	bool thisGoingLeft = this->targetPosition->x < this->pos.x;
 
 	//----------
 
 	// if the masses are the same
 	if (thisMass == otherMass) {
-		// moving in about the same direction
-		if (this->targetPosition->x)
+		// moving in the same direction
+		if (this->targetPosition->x == otherMob->targetPosition->x && this->targetPosition->y == otherMob->targetPosition->y) {
+			//if we are going up
+			if (thisGoingUp) {
+				//if we are below the other, get shoved down (behind)
+				if (this->pos.y >= otherMob->pos.y) {
+					this->pos.y += this->GetSize() * 1.5f;
+				}
+			}
+			//we are going down
+			else {
+				//if we are above the other, get shoved up (behind)
+				if (this->pos.y <= otherMob->pos.y) {
+					this->pos.y -= this->GetSize() * 1.5f;
+				}
+			}
+		}
+		// moving in opposite directions
+		else {
+			//we are going up
+			if (thisGoingUp) {
+				this->pos.y -= this->GetSize() / 4;
+				// if our target is to the left, get shoved "out" to the right
+				if (thisGoingLeft) {
+					this->pos.x += this->GetSize() / 3;
+					otherMob->pos.x -= this->GetSize() / 4;
+				}
+				//otherwise we are going right, and get shoved "out" to the left
+				else {
+					this->pos.x -= this->GetSize() / 3;
+					otherMob->pos.x += this->GetSize() / 4;
+				}
+			}
+			//we are going down
+			else {
+				this->pos.y += this->GetSize() / 4;
+				//if our target is to the left, get shoved "out" to the left
+				if (thisGoingLeft) {
+					this->pos.x -= this->GetSize() / 3;
+				}
+				//otherwise we are going right, and get shoved our to the right
+				else {
+					this->pos.x += this->GetSize() / 3;
+				}
+			}
+		}
 	}
 
+	//----------
+
+	// if we have less mass than what we are colliding with
 	if (thisMass < otherMass) {
-		// move this one backward, and the other forward
-		this->targetPosition;
+		//if we are going up
+		if (thisGoingUp) {
+			//if we are below the other, get shoved down (behind)
+			if (this->pos.y >= otherMob->pos.y) {
+				std::cout << "TRIGGER";
+				Point newPoint = Point(this->pos.x + 10, this->pos.y);
+				Waypoint newWaypoint = Waypoint{ newPoint, this->nextWaypoint->upNeighbor, this->nextWaypoint->downNeighbor };
+				this->nextWaypoint = std::make_shared<Waypoint>(newWaypoint);
+				this->moveProcedure(elapsedTime);
+				//this->nextWaypoint = std::make_shared<Waypoint>(Waypoint(this->pos.x + 3, this->pos.y + 3));
+				//this->pos.y += otherMob->GetSize() * 1.5f;
+				//this->pos.x += this->GetSize() * 3;
+			}
+		}
+		//we are going down
+		else {
+			//if we are above the other, get shoved up (behind)
+			if (this->pos.y <= otherMob->pos.y) {
+				//this->pos.y -= otherMob->GetSize() * 1.5f;
+				Point newPoint = Point(this->pos.x + 10, this->pos.y);
+				Waypoint newWaypoint = Waypoint{ newPoint, this->nextWaypoint->upNeighbor, this->nextWaypoint->downNeighbor };
+				this->nextWaypoint = std::make_shared<Waypoint>(newWaypoint);
+			}
+		}
 	}
 
 	if (thisMass > otherMass) {
@@ -270,9 +341,10 @@ void Mob::moveProcedure(double elapsedTime) {
 
 		// PROJECT 3: You should not change this code very much, but this is where your 
 		// collision code will be called from
-		std::shared_ptr<Mob> otherMob = this->checkCollision();
-		if (otherMob) {
+		std::vector<std::shared_ptr<Mob>> allCollisions = this->checkCollision();
+		for (std::shared_ptr<Mob> otherMob : allCollisions) {
 			this->processCollision(otherMob, elapsedTime);
+			//std::cout << "COLLIDING";
 		}
 
 		// Fighting otherMob takes priority always
