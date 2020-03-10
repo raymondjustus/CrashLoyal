@@ -23,6 +23,8 @@ const float NorthKingY = GAME_GRID_HEIGHT * (1 / 20.0);
 const float SouthPrincessY = GAME_GRID_HEIGHT - NorthPrincessY;
 const float SouthKingY = GAME_GRID_HEIGHT - NorthKingY;
 
+
+
 enum class BuildingType {
 	NorthKing,
 	NorthRightTower,
@@ -38,6 +40,8 @@ class Building {
 public:
 
 	bool isNorthBuilding;
+
+	bool isRiver;
 
 
 	Building(float x, float y,  BuildingType type);

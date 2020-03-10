@@ -22,15 +22,18 @@ Mob::Mob()
 	, targetLocked(false)
 	, target(NULL)
 	, lastAttackTime(0)
+	, isStruct(false)
+	, whereGoing(targetPosition)
 {
 	Mob::previousUUID += 1;
 }
 
-void Mob::Init(const Point& pos, bool attackingNorth)
+void Mob::Init(const Point& pos, bool attackingNorth, bool isStruct)
 {
 	health = GetMaxHealth();
 	this->pos = pos;
 	this->attackingNorth = attackingNorth;
+	this->isStruct = isStruct;
 	findClosestWaypoint();
 }
 
@@ -68,6 +71,7 @@ bool Mob::findClosestWaypoint() {
 }
 
 void Mob::moveTowards(std::shared_ptr<Point> moveTarget, double elapsedTime) {
+	this->whereGoing = moveTarget;
 	Point movementVector;
 	movementVector.x = moveTarget->x - this->pos.x;
 	movementVector.y = moveTarget->y - this->pos.y;
@@ -113,6 +117,9 @@ bool Mob::findAndSetAttackableMob() {
 	// If a target is found then this Mob is updated to start attacking it
 	for (std::shared_ptr<Mob> otherMob : GameState::mobs) {
 		if (otherMob->attackingNorth == this->attackingNorth) { continue; }
+		if (otherMob->isStruct) { 
+			continue;
+		}
 
 		bool imLeft    = this->pos.x     < (SCREEN_WIDTH / 2);
 		bool otherLeft = otherMob->pos.x < (SCREEN_WIDTH / 2);
@@ -192,6 +199,12 @@ Point normalizeVector(Point movementVector, Mob* mob, double elapsedTime) {
 
 void Mob::processCollision(std::shared_ptr<Mob> otherMob, double elapsedTime) {
 
+	/*
+	if (otherMob->GetIsStruct()) {
+		std::cout << "COLLIDING";
+	}
+	*/
+
 	//get *this* point
 	std::shared_ptr<Point> posA = this->getPosition();
 	float posAX = posA->x;
@@ -209,8 +222,8 @@ void Mob::processCollision(std::shared_ptr<Mob> otherMob, double elapsedTime) {
 	float otherMass = otherMob->GetMass();
 
 	//Getting the movement directions
-	bool thisGoingUp = this->targetPosition->y < this->pos.y;
-	bool thisGoingLeft = this->targetPosition->x < this->pos.x;
+	bool thisGoingUp = this->whereGoing->y < this->pos.y;
+	bool thisGoingLeft = this->whereGoing->x < this->pos.x;
 
 	//----------
 
@@ -272,33 +285,35 @@ void Mob::processCollision(std::shared_ptr<Mob> otherMob, double elapsedTime) {
 		if (thisGoingUp) {
 			//if we are below the other, get shoved down (behind)
 			if (this->pos.y >= otherMob->pos.y) {
-				std::cout << "TRIGGER";
-				Point newPoint = Point(this->pos.x + 10, this->pos.y);
-				Waypoint newWaypoint = Waypoint{ newPoint, this->nextWaypoint->upNeighbor, this->nextWaypoint->downNeighbor };
-				this->nextWaypoint = std::make_shared<Waypoint>(newWaypoint);
-				this->moveProcedure(elapsedTime);
-				//this->nextWaypoint = std::make_shared<Waypoint>(Waypoint(this->pos.x + 3, this->pos.y + 3));
-				//this->pos.y += otherMob->GetSize() * 1.5f;
-				//this->pos.x += this->GetSize() * 3;
+				std::cout << "A";
+				this->pos.y += otherMob->GetSize() * 1.5f;
+				if (thisGoingLeft) {
+					std::cout << "B";
+					this->pos.x -= this->GetSize() * 3;
+				}
+				else {
+					std::cout << "C";
+					this->pos.x += this->GetSize() * 3;
+				}
 			}
 		}
 		//we are going down
 		else {
 			//if we are above the other, get shoved up (behind)
 			if (this->pos.y <= otherMob->pos.y) {
-				//this->pos.y -= otherMob->GetSize() * 1.5f;
-				Point newPoint = Point(this->pos.x + 10, this->pos.y);
-				Waypoint newWaypoint = Waypoint{ newPoint, this->nextWaypoint->upNeighbor, this->nextWaypoint->downNeighbor };
-				this->nextWaypoint = std::make_shared<Waypoint>(newWaypoint);
+				std::cout << "D";
+				this->pos.y -= otherMob->GetSize() * 1.5f;
+				if (thisGoingLeft) {
+					std::cout << "E";
+					this->pos.x -= this->GetSize() * 3;
+				}
+				else {
+					std::cout << "F";
+					this->pos.x += this->GetSize() * 3;
+				}
 			}
 		}
 	}
-
-	if (thisMass > otherMass) {
-		// move this one forward, and the other backward
-	}
-
-	// PROJECT 3: YOUR COLLISION HANDLING CODE GOES HERE
 }
 
 // Collisions
@@ -306,6 +321,11 @@ void Mob::processCollision(std::shared_ptr<Mob> otherMob, double elapsedTime) {
 // Procedures
 
 void Mob::attackProcedure(double elapsedTime) {
+	std::vector<std::shared_ptr<Mob>> allCollisions = this->checkCollision();
+	for (std::shared_ptr<Mob> otherMob : allCollisions) {
+		this->processCollision(otherMob, elapsedTime);
+	}
+
 	if (this->target == nullptr || this->target->isDead()) {
 		this->targetLocked = false;
 		this->target = nullptr;
@@ -361,6 +381,7 @@ void Mob::update(double elapsedTime) {
 	switch (this->state) {
 	case MobState::Attacking:
 		this->attackProcedure(elapsedTime);
+		this->checkCollision();
 		break;
 	case MobState::Moving:
 	default:

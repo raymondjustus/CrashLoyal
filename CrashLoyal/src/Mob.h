@@ -12,7 +12,7 @@ public:
 	Mob();
 	virtual ~Mob() {}
 
-	virtual void Init(const Point& pos, bool attackingNorth);
+	virtual void Init(const Point& pos, bool attackingNorth, bool isStruct);
 
 	bool IsAttackingNorth() const { return attackingNorth; }
 
@@ -22,6 +22,7 @@ public:
 	virtual float GetSize() const = 0;
 	virtual float GetMass() const = 0;
 	virtual int GetDamage() const = 0;
+	virtual int GetIsStruct() const = 0;
 	virtual float GetAttackTime() const = 0;
 	virtual const char* GetDisplayLetter() const = 0;
 
@@ -31,6 +32,7 @@ public:
 	Point pos; // The position of this mob
 	std::shared_ptr<Waypoint> nextWaypoint; // The default movement target if there are no enemies nearby
 	std::shared_ptr<Point> targetPosition; // The actual place this mob is moving towards
+	std::shared_ptr<Point> whereGoing; // The actual place this mob is moving towards (if attacking)
 
 	// The main function that drives this mob. Should be called once every game tick.
 	void update(double elapsedTime);
@@ -63,6 +65,8 @@ protected:
 	std::shared_ptr<Attackable> target;
 
 	float lastAttackTime;           // How long ago was the last attack? 
+
+	bool isStruct;
 
 	bool findClosestWaypoint();
 

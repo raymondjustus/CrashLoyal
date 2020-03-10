@@ -2,6 +2,8 @@
 #include "GameState.h"
 #include "Mob_Archer.h"
 #include "Mob_Swordsman.h"
+#include "Mob_Struct.h"
+#include "Mob_Big_Struct.h"
 #include "Point.h"
 #include "SDL.h"
 #include "SDL_image.h"
@@ -174,7 +176,7 @@ void processClick(int x, int y, bool leftClick)
 		keyboardState[SDL_SCANCODE_LSHIFT]			// if left-shift is down
 		? std::shared_ptr<Mob>(new Mob_Archer)
 		: std::shared_ptr<Mob>(new Mob_Swordsman);
-	m->Init(pos, leftClick);
+	m->Init(pos, leftClick, false);
 	GameState::mobs.push_back(m);
 }
 
@@ -238,6 +240,8 @@ int main(int argc, char* args[]) {
 		auto previousTime = std::chrono::high_resolution_clock::now();
 		auto now = std::chrono::high_resolution_clock::now();
 
+		bool doneOnce = false;
+
 		//While application is running
 		while (!quit) {
 
@@ -289,11 +293,73 @@ int main(int argc, char* args[]) {
 				}
 			}
 
+			//place the river and tower hitboxes
+			if (!doneOnce) {
+				// left river
+				for (int i = -2; i < 12; i+=3) {
+					std::shared_ptr<Mob> river =
+						std::shared_ptr<Mob>(new Mob_Struct);
+					river->Init(Point(float(i + river->GetSize()), float(GAME_GRID_HEIGHT / 2)), NULL, true);
+					GameState::mobs.push_back(river);
+					}
+				//middle river
+				for (int i = 16; i < 42; i+=3) {
+					std::shared_ptr<Mob> river =
+						std::shared_ptr<Mob>(new Mob_Struct);
+					river->Init(Point(float(i + river->GetSize()), float(GAME_GRID_HEIGHT / 2)), NULL, true);
+					GameState::mobs.push_back(river);
+				}
+				//right river
+				for (int i = 46; i < 59; i+=3) {
+					std::shared_ptr<Mob> river =
+						std::shared_ptr<Mob>(new Mob_Struct);
+					river->Init(Point(float(i + river->GetSize()), float(GAME_GRID_HEIGHT / 2)), NULL, true);
+					GameState::mobs.push_back(river);
+				}
+
+				//-------------------
+
+				//top towers
+				std::shared_ptr<Mob> topLTower =
+					std::shared_ptr<Mob>(new Mob_Struct);
+				topLTower->Init(Point(PrincessLeftX, NorthPrincessY), NULL, true);
+				GameState::mobs.push_back(topLTower);
+
+				std::shared_ptr<Mob> topRTower =
+					std::shared_ptr<Mob>(new Mob_Struct);
+				topRTower->Init(Point(PrincessRightX, NorthPrincessY), NULL, true);
+				GameState::mobs.push_back(topRTower);
+
+				std::shared_ptr<Mob> topMTower =
+					std::shared_ptr<Mob>(new Mob_Big_Struct);
+				topMTower->Init(Point(KingX, NorthKingY), NULL, true);
+				GameState::mobs.push_back(topMTower);
+
+				//bottom towers
+				std::shared_ptr<Mob> botLTower =
+					std::shared_ptr<Mob>(new Mob_Struct);
+				botLTower->Init(Point(PrincessLeftX, SouthPrincessY), NULL, true);
+				GameState::mobs.push_back(botLTower);
+
+				std::shared_ptr<Mob> botRTower =
+					std::shared_ptr<Mob>(new Mob_Struct);
+				botRTower->Init(Point(PrincessRightX, SouthPrincessY), NULL, true);
+				GameState::mobs.push_back(botRTower);
+
+				std::shared_ptr<Mob> botMTower =
+					std::shared_ptr<Mob>(new Mob_Big_Struct);
+				botMTower->Init(Point(KingX, SouthKingY), NULL, true);
+				GameState::mobs.push_back(botMTower);
+
+				doneOnce = true;
+			}
+
+
 			// Draw and update mobs
 			SDL_SetRenderDrawColor(gRenderer, 0xFF, 0x00, 0xFF, 0xFF);
 
 			for (std::shared_ptr<Mob> m : GameState::mobs) {
-				if (!m->isDead()) {
+				if (!m->isDead() && !m->GetIsStruct()) {
 					drawMob(m);
 					m->update(deltaTSec);
 				}

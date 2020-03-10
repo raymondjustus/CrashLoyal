@@ -37,7 +37,6 @@ std::unordered_set<std::shared_ptr<Building>> GameState::buildBuildings() {
 	result.insert(southLeftPrincess);
 	result.insert(southRightPrincess);
 
-
 	return result;
 }
 
